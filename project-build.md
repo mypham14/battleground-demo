@@ -118,9 +118,12 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 - A "Save" button on each fighter on the winner card.
 - Downsize the image client-side (canvas, about 256px, WebP or JPEG) before storing.
 - BattleDex view lists saved fighters; allow deleting one.
+- Each saved fighter is a styled card that looks like a mini trading card: the image on top, the name below.
+- A card shows only the image and the name, so it is not clickable and opens no detail view.
+- The BattleDex page has two buttons at the top: one to jump back into your most recent fight (the recap of the last result), and one to start a new fight. Show the recent-fight button only when a recent fight exists.
 - Handle a full localStorage with a clear message.
 
-**Done when:** saved fighters persist after a reload, and 50+ saves still fit.
+**Done when:** saved fighters persist after a reload and show as trading-card-style cards (image on top, name below, not clickable), 50+ saves still fit, the recent-fight button returns to the last result, and the new-fight button opens a blank battle screen.
 
 ## Stage 8: Claude redesign
 
