@@ -95,7 +95,7 @@ function showError(errorCode, fallbackMessage) {
   showView('error');
 }
 
-function showResult(data, { persist = true, savedA = false, savedB = false } = {}) {
+function showResult(data, { persist = true } = {}) {
   showView('result');
 
   // Text-only until the image stage lands: no image means no image block and no save button.
@@ -117,8 +117,8 @@ function showResult(data, { persist = true, savedA = false, savedB = false } = {
 
   verdictText.textContent = data.verdict.explanation;
 
-  setSaveButtonState('A', savedA, hasImages);
-  setSaveButtonState('B', savedB, hasImages);
+  setSaveButtonState('A', isInBattledex(lastFighters.fighterA), hasImages);
+  setSaveButtonState('B', isInBattledex(lastFighters.fighterB), hasImages);
 
   if (persist) {
     saveLastFight({
@@ -216,12 +216,14 @@ document.querySelectorAll('.portrait-card__save').forEach((button) => {
     const label = side === 'A' ? lastFighters.fighterA : lastFighters.fighterB;
     const imageDataUrl = side === 'A' ? portraitImageA.src : portraitImageB.src;
 
+    if (button.disabled) return;
+    button.disabled = true;
+
     try {
       await saveToBattledex({ label, imageDataUrl });
-      markLastFightSaved(side);
-      button.disabled = true;
       button.textContent = 'Saved!';
     } catch {
+      button.disabled = false;
       button.textContent = 'Add failed (storage full)';
     }
   });
@@ -233,7 +235,7 @@ if (new URLSearchParams(location.search).get('recap') === '1') {
     lastFighters = { fighterA: lastFight.fighterA, fighterB: lastFight.fighterB };
     showResult(
       { imageA: lastFight.imageA, imageB: lastFight.imageB, verdict: lastFight.verdict },
-      { persist: false, savedA: lastFight.savedA, savedB: lastFight.savedB }
+      { persist: false }
     );
   }
 }

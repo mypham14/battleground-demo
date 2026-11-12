@@ -29,9 +29,19 @@ function getBattledex() {
   }
 }
 
+function sameFighter(a, b) {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+function isInBattledex(label) {
+  return getBattledex().some((entry) => sameFighter(entry.label, label));
+}
+
 async function saveToBattledex({ label, imageDataUrl }) {
+  if (isInBattledex(label)) return getBattledex();
   const resized = await resizeImageDataUrl(imageDataUrl, BATTLEDEX_IMAGE_MAX_DIM);
   const dex = getBattledex();
+  if (dex.some((entry) => sameFighter(entry.label, label))) return dex;
   dex.push({
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     label,
