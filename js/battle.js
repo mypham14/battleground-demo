@@ -98,12 +98,18 @@ function showError(errorCode, fallbackMessage) {
 function showResult(data, { persist = true, savedA = false, savedB = false } = {}) {
   showView('result');
 
-  portraitImageA.src = data.imageA;
-  portraitImageA.alt = lastFighters.fighterA;
-  portraitLabelA.textContent = lastFighters.fighterA;
+  // Text-only until the image stage lands: no image means no image block and no save button.
+  const hasImages = Boolean(data.imageA && data.imageB);
 
-  portraitImageB.src = data.imageB;
-  portraitImageB.alt = lastFighters.fighterB;
+  portraitImageA.parentElement.hidden = !hasImages;
+  portraitImageB.parentElement.hidden = !hasImages;
+  if (hasImages) {
+    portraitImageA.src = data.imageA;
+    portraitImageA.alt = lastFighters.fighterA;
+    portraitImageB.src = data.imageB;
+    portraitImageB.alt = lastFighters.fighterB;
+  }
+  portraitLabelA.textContent = lastFighters.fighterA;
   portraitLabelB.textContent = lastFighters.fighterB;
 
   portraitA.classList.toggle('is-winner', data.verdict.winner === 'A');
@@ -111,8 +117,8 @@ function showResult(data, { persist = true, savedA = false, savedB = false } = {
 
   verdictText.textContent = data.verdict.explanation;
 
-  setSaveButtonState('A', savedA);
-  setSaveButtonState('B', savedB);
+  setSaveButtonState('A', savedA, hasImages);
+  setSaveButtonState('B', savedB, hasImages);
 
   if (persist) {
     saveLastFight({
@@ -133,8 +139,9 @@ function showResult(data, { persist = true, savedA = false, savedB = false } = {
   });
 }
 
-function setSaveButtonState(side, saved) {
+function setSaveButtonState(side, saved, visible) {
   const button = document.querySelector(`.portrait-card__save[data-save="${side}"]`);
+  button.hidden = !visible;
   button.disabled = saved;
   button.textContent = saved ? 'Saved!' : 'Add to BattleDex';
 }

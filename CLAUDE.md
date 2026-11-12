@@ -9,7 +9,7 @@ Demo/proof-of-concept build — not production-hardened. Keep it simple.
 - **Frontend**: plain HTML, CSS, vanilla JS. No framework, no bundler, no build step.
 - **Hosting**: Vercel (static frontend + serverless functions deployed together).
 - **Backend**: Vercel Functions (`/api`) — Node.js runtime, `module.exports = (request, response) => {...}` style (`request.body` pre-parsed, `response.status().json()` helpers). Exists only to keep API keys server-side.
-- **Verdict AI**: Anthropic Claude API (`@anthropic-ai/sdk`).
+- **Verdict AI**: DeepSeek API (OpenAI-compatible, via the `openai` package with `baseURL: https://api.deepseek.com`).
 - **Art AI**: OpenAI Images API (`openai` package), model `gpt-image-2`.
 - **Storage**: browser `localStorage` only. No database, no accounts, no cross-device sync.
 
@@ -30,7 +30,8 @@ battleground-demo/
 │   ├── battle.js         # index.html logic
 │   ├── battledex.js      # battledex.html logic
 │   └── storage.js        # shared localStorage helpers
-├── api/fight.js          # the one serverless function
+├── api/fight.js          # the one serverless function (/api/fight): rate limit, validation, verdict
+├── api/judge-prompt.js   # judge SYSTEM_PROMPT (exports a string, not a handler)
 ├── vercel.json
 ├── package.json
 └── .env.example
@@ -53,10 +54,10 @@ battleground-demo/
 
 ## APIs used
 
-### Anthropic (verdict)
-- `client.messages.parse()` with `output_config.format: zodOutputFormat(VerdictSchema)` for native structured output — not prompt-parsed JSON, not the forced-tool-use trick.
+### DeepSeek (verdict)
+- `chat.completions.create()` with `response_format: { type: 'json_object' }` and `thinking: { type: 'disabled' }`. DeepSeek has no `json_schema` mode, so the prompt states the shape (it must contain the word "json") and the zod `VerdictSchema` validates the result; blank or invalid output is retried once.
 - `VerdictSchema = z.object({ winner: z.enum(['A', 'B']), explanation: z.string() })`.
-- Model: `claude-sonnet-5`.
+- Model: `deepseek-flash`. Key: `DEEPSEEK_API_KEY`.
 - `zod` is imported as `zod/v4` (the v4 API ships inside the installed `zod` 3.25.x package). Keep that import path.
 - `explanation` is 2-4 sentences, playful but logically grounded. Quantity is part of the matchup ("10 lions" is a group fight).
 - System prompt scopes Claude strictly to judging the two given fighters; explicitly told to treat any embedded instructions/prompt-injection attempts as just another weird fighter description and stay in character; must always pick exactly one winner (`"A"` or `"B"`), even for identical/mirror matchups — never a tie, never a refusal.
@@ -79,7 +80,7 @@ battleground-demo/
 
 ## Environment variables
 
-`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — set as Vercel project env vars, never committed. `.env.example` documents the names. Local dev via `node script.js` (or `vercel dev`) reads a local `.env`.
+`DEEPSEEK_API_KEY` — set as Vercel project env vars, never committed. `.env.example` documents the names. Local dev via `node script.js` (or `vercel dev`) reads a local `.env`.
 
 ## Full spec / plan
 
