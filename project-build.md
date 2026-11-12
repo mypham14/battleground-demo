@@ -74,12 +74,15 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 **Goal:** add the OpenAI calls to the same function.
 
 - In `api/fight.js`, run the Claude call and both image calls in parallel (`Promise.all`).
-- The art style is chosen per fighter: build it into each image prompt.
+- Every image follows one shared art style template, with the fighter placed into it. The template:
+  - Bold flat-color illustration, thick black outline, dynamic action pose, dramatic lighting, video game character art style.
+  - Centered, filling most of the frame, isolated on a plain solid light grey background with no scenery.
+  - Absolutely no text, words, letters, numbers, logos, watermarks, UI elements, borders, or frames of any kind. Illustration only, nothing else on the canvas.
 - A group prompt depicts the whole group in one image ("10 lions").
-- If OpenAI refuses a prompt, the function returns a clear error code naming which fighter was refused.
+- `moderation_blocked` is its own error case, separate from a generic image failure. When OpenAI refuses a prompt, the function returns `moderation_blocked` (HTTP 422) and names which fighter was refused. Any other image error returns `image_failed` (HTTP 502).
 - Return one response: verdict JSON plus two images.
 
-**Done when:** one request returns a verdict and two images for a single-creature matchup and a group matchup, and a refused fighter returns the error code.
+**Done when:** one request returns a verdict and two images in the shared style for a single-creature matchup and a group matchup, a refused fighter returns `moderation_blocked`, and a different image error returns `image_failed`.
 
 ## Stage 5: Art in the UI
 
@@ -87,7 +90,7 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 - Keep the single loading view while the function runs.
 - Show the two images on the winner card in the result view.
-- On the refusal error, ask the user for a different fighter.
+- On `moderation_blocked`, ask the user for a different fighter. A generic `image_failed` shows a retry message instead.
 
 **Done when:** one fight shows a verdict and two images, and a refused fighter prompts for a new one.
 

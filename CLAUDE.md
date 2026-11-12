@@ -33,8 +33,7 @@ battleground-demo/
 ├── api/fight.js          # the one serverless function (/api/fight): rate limit, validation, verdict
 ├── api/judge-prompt.js   # judge SYSTEM_PROMPT (exports a string, not a handler)
 ├── vercel.json
-├── package.json
-└── .env.example
+└── package.json
 ```
 
 ## Logic breakdown
@@ -80,7 +79,7 @@ battleground-demo/
 
 ## Environment variables
 
-`DEEPSEEK_API_KEY` — set as Vercel project env vars, never committed. `.env.example` documents the names. Local dev via `node script.js` (or `vercel dev`) reads a local `.env`.
+`DEEPSEEK_API_KEY` — set as Vercel project env vars, never committed. Create a local `.env` with that name (git-ignored). Local dev via `node script.js` (or `vercel dev`) reads a local `.env`.
 
 ## Full spec / plan
 

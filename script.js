@@ -9,7 +9,7 @@ const ROOT = __dirname;
 try {
   process.loadEnvFile(path.join(ROOT, '.env'));
 } catch {
-  console.warn('No .env found. Copy .env.example to .env and add your API keys.');
+  console.warn('No .env found. Create a .env file with DEEPSEEK_API_KEY=your-key.');
 }
 
 const MIME_TYPES = {
