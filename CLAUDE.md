@@ -15,14 +15,14 @@ Demo/proof-of-concept build — not production-hardened. Keep it simple.
 
 ## Commands
 
-- Run locally: `node dev-server.js` (port 3000, or `PORT`). Serves the static files and runs `api/fight.js` with no Vercel CLI; loads `.env` itself. `vercel dev` also works.
+- Run locally: `node script.js` (port 3000, or `PORT`). Serves the static files and runs `api/fight.js` with no Vercel CLI; loads `.env` itself. `vercel dev` also works.
 - No test suite, linter, or build step. Verify the endpoint with `curl -X POST localhost:3000/api/fight -H "Content-Type: application/json" -d '{"fighterA":"lion","fighterB":"lion"}'`.
 
 ## Repo layout
 
 ```
 battleground-demo/
-├── dev-server.js       # local runner: static files + /api/fight
+├── script.js           # local runner: static files + /api/fight
 ├── index.html          # Battle screen: fighter inputs, VS, Fight button, reveal, verdict
 ├── battledex.html       # Saved-character gallery screen
 ├── css/style.css        # Shared styles
@@ -79,7 +79,7 @@ battleground-demo/
 
 ## Environment variables
 
-`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — set as Vercel project env vars, never committed. `.env.example` documents the names. Local dev via `node dev-server.js` (or `vercel dev`) reads a local `.env`.
+`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — set as Vercel project env vars, never committed. `.env.example` documents the names. Local dev via `node script.js` (or `vercel dev`) reads a local `.env`.
 
 ## Full spec / plan
 
