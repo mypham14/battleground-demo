@@ -1,15 +1,12 @@
-const OpenAI = require('openai');
+const Anthropic = require('@anthropic-ai/sdk');
+const { zodOutputFormat } = require('@anthropic-ai/sdk/helpers/zod');
 const { z } = require('zod/v4');
+const OpenAI = require('openai');
 const { SYSTEM_PROMPT } = require('./judge-prompt');
+const { artPrompt } = require('./art-style');
 
-// DeepSeek speaks the OpenAI chat-completions protocol.
-const deepseek = new OpenAI({
-  baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY,
-});
-
-const MODEL = 'deepseek-flash';
-const MAX_ATTEMPTS = 2;
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const MAX_FIGHTER_LENGTH = 80;
 const RATE_LIMIT_MAX = 5;
@@ -36,40 +33,28 @@ const VerdictSchema = z.object({
   explanation: z.string().min(1),
 });
 
-// DeepSeek only offers json_object mode (no json_schema), so the prompt carries
-// the shape and zod is the enforcement. Blank or invalid output gets one retry.
-const FORMAT_INSTRUCTIONS = `
-
-Respond with a single json object and nothing else, in exactly this shape:
-{"winner": "A", "explanation": "Two to four playful but logical sentences."}
-"winner" is "A" or "B". "explanation" is a string.`;
-
 async function getVerdict(fighterA, fighterB) {
-  let lastError;
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    try {
-      const completion = await deepseek.chat.completions.create({
-        model: MODEL,
-        max_tokens: 1024,
-        thinking: { type: 'disabled' },
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT + FORMAT_INSTRUCTIONS },
-          { role: 'user', content: `Fighter A: ${fighterA}
-Fighter B: ${fighterB}
+  const message = await anthropic.messages.parse({
+    model: 'claude-sonnet-5',
+    max_tokens: 1024,
+    system: SYSTEM_PROMPT,
+    messages: [
+      { role: 'user', content: `Fighter A: ${fighterA}\nFighter B: ${fighterB}\n\nWho wins?` },
+    ],
+    output_config: { format: zodOutputFormat(VerdictSchema) },
+  });
+  if (!message.parsed_output) throw new Error('verdict did not match schema');
+  return message.parsed_output;
+}
 
-Who wins?` },
-        ],
-      });
-      const content = completion.choices[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty verdict');
-      return VerdictSchema.parse(JSON.parse(content));
-    } catch (error) {
-      lastError = error;
-      if (error.status) break;
-    }
-  }
-  throw lastError;
+async function getImage(fighter) {
+  const result = await openai.images.generate({
+    model: 'gpt-image-2',
+    prompt: artPrompt(fighter),
+    size: '1024x1024',
+    quality: 'low',
+  });
+  return `data:image/png;base64,${result.data[0].b64_json}`;
 }
 
 module.exports = async (request, response) => {
@@ -97,11 +82,50 @@ module.exports = async (request, response) => {
     return;
   }
 
-  try {
-    const verdict = await getVerdict(fighterA.trim(), fighterB.trim());
-    response.status(200).json({ verdict });
-  } catch (error) {
-    console.error('verdict failed:', error.status ?? '', error.message);
+  const nameA = fighterA.trim();
+  const nameB = fighterB.trim();
+
+  const results = await Promise.allSettled([
+    getVerdict(nameA, nameB),
+    getImage(nameA),
+    getImage(nameB),
+  ]);
+  const [verdictResult, imageAResult, imageBResult] = results;
+
+  results.forEach((result, i) => {
+    if (result.status === 'rejected') {
+      console.error(['verdict', 'imageA', 'imageB'][i], 'failed:', result.reason?.status ?? '', result.reason?.code ?? '', result.reason?.message);
+    }
+  });
+
+  if (verdictResult.status === 'rejected') {
     response.status(502).json({ error: 'verdict_failed', message: "The judges couldn't reach a decision. Try again?" });
+    return;
   }
+
+  const imageResults = [
+    { side: 'A', name: nameA, result: imageAResult },
+    { side: 'B', name: nameB, result: imageBResult },
+  ];
+  const refused = imageResults.filter(({ result }) => result.status === 'rejected' && result.reason?.code === 'moderation_blocked');
+  if (refused.length > 0) {
+    const names = refused.map(({ name }) => `"${name}"`).join(' and ');
+    response.status(422).json({
+      error: 'moderation_blocked',
+      fighters: refused.map(({ side }) => side),
+      message: `${names} got flagged by the content police. Try a different fighter.`,
+    });
+    return;
+  }
+
+  if (imageResults.some(({ result }) => result.status === 'rejected')) {
+    response.status(502).json({ error: 'image_failed', message: "The artist's pencil broke. Try again?" });
+    return;
+  }
+
+  response.status(200).json({
+    verdict: verdictResult.value,
+    imageA: imageAResult.value,
+    imageB: imageBResult.value,
+  });
 };

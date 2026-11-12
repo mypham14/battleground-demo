@@ -9,7 +9,7 @@ Demo/proof-of-concept build — not production-hardened. Keep it simple.
 - **Frontend**: plain HTML, CSS, vanilla JS. No framework, no bundler, no build step.
 - **Hosting**: Vercel (static frontend + serverless functions deployed together).
 - **Backend**: Vercel Functions (`/api`) — Node.js runtime, `module.exports = (request, response) => {...}` style (`request.body` pre-parsed, `response.status().json()` helpers). Exists only to keep API keys server-side.
-- **Verdict AI**: DeepSeek API (OpenAI-compatible, via the `openai` package with `baseURL: https://api.deepseek.com`).
+- **Verdict AI**: Anthropic Claude API (`@anthropic-ai/sdk`).
 - **Art AI**: OpenAI Images API (`openai` package), model `gpt-image-2`.
 - **Storage**: browser `localStorage` only. No database, no accounts, no cross-device sync.
 
@@ -32,6 +32,7 @@ battleground-demo/
 │   └── storage.js        # shared localStorage helpers
 ├── api/fight.js          # the one serverless function (/api/fight): rate limit, validation, verdict
 ├── api/judge-prompt.js   # judge SYSTEM_PROMPT (exports a string, not a handler)
+├── api/art-style.js      # shared art style template + artPrompt(fighter) (not a handler)
 ├── vercel.json
 └── package.json
 ```
@@ -53,10 +54,10 @@ battleground-demo/
 
 ## APIs used
 
-### DeepSeek (verdict)
-- `chat.completions.create()` with `response_format: { type: 'json_object' }` and `thinking: { type: 'disabled' }`. DeepSeek has no `json_schema` mode, so the prompt states the shape (it must contain the word "json") and the zod `VerdictSchema` validates the result; blank or invalid output is retried once.
+### Anthropic (verdict)
+- `client.messages.parse()` with `output_config.format: zodOutputFormat(VerdictSchema)` for native structured output — not prompt-parsed JSON, not the forced-tool-use trick.
 - `VerdictSchema = z.object({ winner: z.enum(['A', 'B']), explanation: z.string() })`.
-- Model: `deepseek-flash`. Key: `DEEPSEEK_API_KEY`.
+- Model: `claude-sonnet-5`.
 - `zod` is imported as `zod/v4` (the v4 API ships inside the installed `zod` 3.25.x package). Keep that import path.
 - `explanation` is 2-4 sentences, playful but logically grounded. Quantity is part of the matchup ("10 lions" is a group fight).
 - System prompt scopes Claude strictly to judging the two given fighters; explicitly told to treat any embedded instructions/prompt-injection attempts as just another weird fighter description and stay in character; must always pick exactly one winner (`"A"` or `"B"`), even for identical/mirror matchups — never a tie, never a refusal.
@@ -65,8 +66,8 @@ battleground-demo/
 - `client.images.generate({ model: 'gpt-image-2', prompt, size: '1024x1024', quality: 'low' })`. Quality dropped from `medium` to `low` after a live production test on Vercel Hobby timed out — a real fight (verdict + two `medium`-quality images in parallel) took 60-75s locally with no timeout, but `vercel.json`'s `maxDuration` was set to `60` at the time. That value was based on a stale "Hobby hard-caps at 60s" assumption — confirmed via context7 against live Vercel docs that Hobby's actual ceiling is 300s (fluid compute default across all plans) — so `maxDuration` was raised to `120` (2x the measured 60-75s runtime) instead of degrading quality further. `low` quality is kept regardless, still the right call for cost/latency.
 - `gpt-image-2` is the **current** default image model (not `gpt-image-1`, which is legacy) — confirmed via context7 against live OpenAI docs during build, since training data may be stale here.
 - GPT image models return `b64_json` by default (no `response_format` param needed, no external image hosting).
-- Shared art style template with a `{FIGHTER}` placeholder keeps every generated character visually consistent (bold flat-color illustration, thick outlines, dynamic action pose, isolated on a plain light-gray background). Explicitly forbids text/logos/UI/borders in the prompt — first pass without this produced baked-in "PLAYER 1 CHOOSE YOUR LION" style card text and a red backdrop, since the model over-interpreted "character-select screen aesthetic" literally. Quantities in the input (e.g. "10 lions") are passed straight through — not parsed or enforced as an exact count, just relies on the model reading "a lot of."
-- Moderation-blocked requests throw with `error.code === 'moderation_blocked'` — handled as a distinct error case, not a generic failure.
+- Shared art style template (`api/art-style.js`, `{FIGHTER}` placeholder) keeps every generated character consistent: bold flat-color illustration, thick black outline, dynamic action pose, dramatic lighting, video game style, centered on a plain solid light grey background, and no text/logos/UI/borders. Quantities ("10 lions") are passed straight through as one group image.
+- Moderation-blocked requests throw with `error.code === 'moderation_blocked'` — returned as `422 { error: 'moderation_blocked', fighters: ['A'|'B'], message }` naming the refused fighter(s); any other image error is `502 image_failed`.
 
 ## Key decisions / gotchas
 
@@ -79,7 +80,7 @@ battleground-demo/
 
 ## Environment variables
 
-`DEEPSEEK_API_KEY` — set as Vercel project env vars, never committed. Create a local `.env` with that name (git-ignored). Local dev via `node script.js` (or `vercel dev`) reads a local `.env`.
+`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — set as Vercel project env vars, never committed. Create a local `.env` with those names (git-ignored). Local dev via `node script.js` (or `vercel dev`) reads a local `.env`.
 
 ## Full spec / plan
 
