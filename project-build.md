@@ -9,7 +9,7 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 | 0 | Setup | Local project runs, keys are safe |
 | 1 | UI shell | Desktop layout with inputs and Fight button |
 | 2 | Fight function: verdict | `/api/fight` returns structured verdict JSON |
-| 3 | Verdict in the UI | Fight shows a winner card with reasoning |
+| 3 | Verdict in the UI | Fight shows a winner card with explanation |
 | 4 | Fight function: images | Same function also returns two images |
 | 5 | Art in the UI | Card shows two images; refusals handled |
 | 6 | Winner animation | Winner reveal animates |
@@ -51,17 +51,20 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 - `api/fight.js` takes two fighters and calls Claude.
 - The prompt treats quantity as part of the matchup ("10 cows vs 10 lions").
-- Claude returns JSON: `winner`, `reasoning`, optionally `tagline`. Validate it before returning.
-- Test with `curl` on a few matchups, including groups.
+- The judge always names exactly one winner. No ties and no refusals, even for identical matchups (for example "lion" vs "lion"); it still picks a side.
+- The explanation is 2-4 sentences at most, in a fun and playful tone that still holds up logically.
+- Claude returns JSON: `winner`, `explanation`, optionally `tagline`. Validate it before returning, including that `winner` is one of the two fighters and `explanation` is 2-4 sentences.
+- Test with `curl` on a few matchups, including groups and an identical matchup.
 
-**Done when:** the endpoint returns valid JSON for 5 varied matchups.
+**Done when:** the endpoint returns valid JSON for 5 varied matchups, each with one winner and a playful 2-4 sentence explanation, and an identical matchup still returns a winner.
 
 ## Stage 3: Verdict in the UI
 
 **Goal:** the first end-to-end fight, text only.
 
 - Fight button calls `/api/fight`.
-- Switch to the loading view while the call runs, then to the result view with the winner and reasoning.
+- The verdict's output format is defined with a zod schema, used for Claude's structured output. The UI can rely on the response matching that shape.
+- Switch to the loading view while the call runs, then to the result view with the winner and explanation.
 - Switch to the error view with a simple message if the call fails.
 
 **Done when:** you can type two fighters and read a real verdict.
@@ -95,7 +98,7 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 - Animate the winner card (CSS keyframes or transitions).
 - Keep it short or skippable so repeat fights don't feel slow.
 
-**Done when:** the reveal plays on every fight and doesn't block reading the reasoning.
+**Done when:** the reveal plays on every fight and doesn't block reading the explanation.
 
 ## Stage 7: BattleDex
 

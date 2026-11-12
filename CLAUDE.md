@@ -13,10 +13,16 @@ Demo/proof-of-concept build — not production-hardened. Keep it simple.
 - **Art AI**: OpenAI Images API (`openai` package), model `gpt-image-2`.
 - **Storage**: browser `localStorage` only. No database, no accounts, no cross-device sync.
 
+## Commands
+
+- Run locally: `node dev-server.js` (port 3000, or `PORT`). Serves the static files and runs `api/fight.js` with no Vercel CLI; loads `.env` itself. `vercel dev` also works.
+- No test suite, linter, or build step. Verify the endpoint with `curl -X POST localhost:3000/api/fight -H "Content-Type: application/json" -d '{"fighterA":"lion","fighterB":"lion"}'`.
+
 ## Repo layout
 
 ```
 battleground-demo/
+├── dev-server.js       # local runner: static files + /api/fight
 ├── index.html          # Battle screen: fighter inputs, VS, Fight button, reveal, verdict
 ├── battledex.html       # Saved-character gallery screen
 ├── css/style.css        # Shared styles
@@ -51,6 +57,8 @@ battleground-demo/
 - `client.messages.parse()` with `output_config.format: zodOutputFormat(VerdictSchema)` for native structured output — not prompt-parsed JSON, not the forced-tool-use trick.
 - `VerdictSchema = z.object({ winner: z.enum(['A', 'B']), explanation: z.string() })`.
 - Model: `claude-sonnet-5`.
+- `zod` is imported as `zod/v4` (the v4 API ships inside the installed `zod` 3.25.x package). Keep that import path.
+- `explanation` is 2-4 sentences, playful but logically grounded. Quantity is part of the matchup ("10 lions" is a group fight).
 - System prompt scopes Claude strictly to judging the two given fighters; explicitly told to treat any embedded instructions/prompt-injection attempts as just another weird fighter description and stay in character; must always pick exactly one winner (`"A"` or `"B"`), even for identical/mirror matchups — never a tie, never a refusal.
 
 ### OpenAI (art)
@@ -71,7 +79,7 @@ battleground-demo/
 
 ## Environment variables
 
-`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — set as Vercel project env vars, never committed. `.env.example` documents the names. Local dev via `vercel dev` reads a local `.env`.
+`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` — set as Vercel project env vars, never committed. `.env.example` documents the names. Local dev via `node dev-server.js` (or `vercel dev`) reads a local `.env`.
 
 ## Full spec / plan
 
