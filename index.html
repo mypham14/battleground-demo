@@ -23,40 +23,42 @@
       <a class="hud__link" href="battledex.html">My BattleDex</a>
     </header>
 
-    <main class="ring">
-      <section class="fighter-slot fighter-slot--a">
-        <span class="fighter-slot__eyebrow">Fighter A</span>
-        <input
-          id="fighterA"
-          class="fighter-slot__input"
-          type="text"
-          maxlength="80"
-          autocomplete="off"
-          placeholder="Type a fighter… (try '10 lions')"
-        />
-      </section>
+    <div id="formView" class="form-view">
+      <main class="ring">
+        <section class="fighter-slot fighter-slot--a">
+          <span class="fighter-slot__eyebrow">Fighter A</span>
+          <input
+            id="fighterA"
+            class="fighter-slot__input"
+            type="text"
+            maxlength="80"
+            autocomplete="off"
+            placeholder="Type a fighter… (try '10 lions')"
+          />
+        </section>
 
-      <div class="seam">
-        <button id="fightButton" class="fight-button" type="button">
-          <span class="fight-button__vs">VS</span>
-          <span class="fight-button__label">Fight!</span>
-        </button>
-      </div>
+        <div class="seam">
+          <button id="fightButton" class="fight-button" type="button">
+            <span class="fight-button__vs">VS</span>
+            <span class="fight-button__label">Fight!</span>
+          </button>
+        </div>
 
-      <section class="fighter-slot fighter-slot--b">
-        <span class="fighter-slot__eyebrow">Fighter B</span>
-        <input
-          id="fighterB"
-          class="fighter-slot__input"
-          type="text"
-          maxlength="80"
-          autocomplete="off"
-          placeholder="Type a fighter… (try 'an old wizard')"
-        />
-      </section>
-    </main>
+        <section class="fighter-slot fighter-slot--b">
+          <span class="fighter-slot__eyebrow">Fighter B</span>
+          <input
+            id="fighterB"
+            class="fighter-slot__input"
+            type="text"
+            maxlength="80"
+            autocomplete="off"
+            placeholder="Type a fighter… (try 'an old wizard')"
+          />
+        </section>
+      </main>
 
-    <p id="formError" class="form-error" role="alert" hidden></p>
+      <p id="formError" class="form-error" role="alert" hidden></p>
+    </div>
 
     <section id="loadingView" class="loading-view" hidden>
       <div class="loading-view__spinner" aria-hidden="true">

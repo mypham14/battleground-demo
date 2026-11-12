@@ -25,7 +25,7 @@ const fighterAInput = document.getElementById('fighterA');
 const fighterBInput = document.getElementById('fighterB');
 const fightButton = document.getElementById('fightButton');
 const formError = document.getElementById('formError');
-const ring = document.querySelector('.ring');
+const formView = document.getElementById('formView');
 
 const loadingView = document.getElementById('loadingView');
 const loadingMessage = document.getElementById('loadingMessage');
@@ -47,18 +47,25 @@ const retryButton = document.getElementById('retryButton');
 let loadingIntervalId = null;
 let lastFighters = { fighterA: '', fighterB: '' };
 
-function hideAll() {
-  ring.hidden = true;
+const views = {
+  form: formView,
+  loading: loadingView,
+  result: resultView,
+  error: errorView,
+};
+
+function showView(name) {
+  for (const [key, element] of Object.entries(views)) {
+    element.hidden = key !== name;
+  }
   formError.hidden = true;
-  loadingView.hidden = true;
-  resultView.hidden = true;
   resultView.classList.remove('is-revealed');
-  errorView.hidden = true;
 }
 
+window.showView = showView;
+
 function showForm() {
-  hideAll();
-  ring.hidden = false;
+  showView('form');
 }
 
 function showFormError(message) {
@@ -67,8 +74,7 @@ function showFormError(message) {
 }
 
 function startLoading() {
-  hideAll();
-  loadingView.hidden = false;
+  showView('loading');
   let index = 0;
   loadingMessage.textContent = LOADING_MESSAGES[0];
   loadingIntervalId = setInterval(() => {
@@ -85,14 +91,12 @@ function stopLoading() {
 }
 
 function showError(errorCode, fallbackMessage) {
-  hideAll();
   errorMessage.textContent = fallbackMessage || ERROR_MESSAGES[errorCode] || ERROR_MESSAGES.network_failed;
-  errorView.hidden = false;
+  showView('error');
 }
 
 function showResult(data, { persist = true, savedA = false, savedB = false } = {}) {
-  hideAll();
-  resultView.hidden = false;
+  showView('result');
 
   portraitImageA.src = data.imageA;
   portraitImageA.alt = lastFighters.fighterA;
