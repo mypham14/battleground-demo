@@ -1,6 +1,6 @@
 # Battleground - Build Stages
 
-Source: `project-brief.md`. Work one stage at a time. Each stage ends in something you can run and check before moving on. Everything is built and tested locally; there is no deploy step.
+Source: `project-brief.md`. Work one stage at a time. Each stage ends in something you can run and check before moving on. Everything is built and tested locally until the final stage, which deploys to Vercel.
 
 **Architecture:** one serverless function, `api/fight.js`, served at `/api/fight`. It rate-limits, validates input, then calls Claude (verdict) and OpenAI (two images) in parallel and returns the whole result. Two helper modules sit beside it and are not handlers: `api/judge-prompt.js` (the judge system prompt) and `api/art-style.js` (the shared art style template).
 
@@ -16,9 +16,10 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 | 5 | Art in the UI | Card shows two images; refusals handled |
 | 6 | Winner animation | Winner reveal animates |
 | 7 | BattleDex | Save individual fighters (label + image) |
-| 8 | System prompt | Claude only judges fights and resists injection |
-| 9 | Rate limiting | 5 requests/min per IP, inside `api/fight.js` |
-| 10 | Polish and finish | Error states, README, full local test |
+| 8 | Claude redesign | Claude Design gives the whole app a full visual overhaul |
+| 9 | System prompt | Claude only judges fights and resists injection |
+| 10 | Rate limiting | 5 requests/min per IP, inside `api/fight.js` |
+| 11 | Final QA and deploy | Error states, README, full local test, live on Vercel |
 
 ---
 
@@ -121,7 +122,19 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 **Done when:** saved fighters persist after a reload, and 50+ saves still fit.
 
-## Stage 8: System prompt
+## Stage 8: Claude redesign
+
+**Goal:** a full visual overhaul of the app, done by Claude Design instead of by hand-polishing the verdict UI.
+
+- Hand the entire app to Claude Design: the battle screen with all four views (form, loading, result, error) and the BattleDex page, together with `css/style.css`.
+- Give it what it must keep: the element ids and class names that `js/battle.js` and `js/battledex.js` read or toggle (`is-revealed`, `is-winner`, `hidden`), the saved-fighter card layout, and the shared pixel-art portraits.
+- Ask for a coherent look across every view, desktop first and still usable at tablet and phone widths.
+- Apply the result and keep behavior unchanged. This stage changes appearance only: no API, storage or logic changes.
+- Run a full fight and a BattleDex save and delete in the browser to confirm nothing broke.
+
+**Done when:** every view and the BattleDex page carry the new design, and a full fight, an error state and a BattleDex save still work.
+
+## Stage 9: System prompt
 
 **Goal:** lock down what Claude will do.
 
@@ -134,27 +147,33 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 **Done when:** none of the injection attempts changes Claude's behavior or output shape, and normal fights still work.
 
-## Stage 9: Rate limiting
+## Stage 10: Rate limiting
 
 **Goal:** protect the endpoint.
 
 - Limit to 5 requests/min per IP, inside `api/fight.js`, before any API call is made. A first version is already in place from the earlier stages; this stage tests and finishes it.
 - One call to the function is one fight, so one request means one fight.
 - Return HTTP 429 and show a friendly "slow down" message in the UI.
-- Locally an in-memory counter is enough. It won't be shared across serverless instances, so it would need a shared store if the app is ever deployed.
+- An in-memory counter is enough for the demo. It won't be shared across serverless instances, so it would need a shared store for real traffic once deployed.
 
 **Done when:** the sixth request in a minute from one IP is rejected before any API call, and the UI explains why.
 
-## Stage 10: Polish and finish
+## Stage 11: Final QA and deploy
 
-**Goal:** something you can put in a portfolio.
+**Goal:** something you can put in a portfolio, live on Vercel.
 
 - Check empty, long, odd and non-English inputs.
 - Check every error path: API down, refusal, rate limit, full storage.
 - Write a README: what it is, a screenshot, the stack, how to run it locally.
 - Run a full local test of a fight from start to finish.
+- Deploy to Vercel:
+  - Set `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` as Vercel project environment variables, never committed.
+  - Keep `vercel.json` `maxDuration` at 120 seconds, since a fight with two images can take a minute or more.
+  - Deploy, then run a full fight on the live URL and check the error paths there too.
+  - The in-memory rate limiter resets on a cold start and is not shared between instances. Accept that for the demo, or move it to a shared store.
+  - Confirm the Anthropic and OpenAI spend limits from Stage 0 are still set.
 
-**Done when:** someone can clone the repo, add their keys, and complete a fight locally from the README.
+**Done when:** someone can clone the repo, add their keys, and complete a fight locally from the README, and a full fight works on the live Vercel URL.
 
 ---
 

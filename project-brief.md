@@ -28,7 +28,7 @@ Images are downsized client-side before saving (canvas resize to roughly 256px, 
 
 HTML, CSS, and vanilla JS for the frontend. A single serverless function (`api/fight.js`) that calls both APIs together. Claude's API for the verdict. OpenAI's image API for the character art. localStorage for saving BattleDex.
 
-The project is built and tested locally the whole way, with no deploy step. The function can be run locally with `vercel dev`.
+The project is built and tested locally, then deployed to Vercel in the final QA stage. Locally, `node script.js` serves the pages and the function (`vercel dev` also works where symlinks are allowed).
 
 API keys stay server-side in the function, loaded from a local `.env` that is never committed.
 
@@ -50,7 +50,7 @@ Cross-device sync needs some form of identity (accounts or an anonymous ID), so 
 - **Art style:** chosen per fighter, so the two images may differ in style.
 - **Refused input:** if the image API refuses a fighter (real people, copyrighted characters, unsafe input), the app asks the user for a different fighter.
 - **Layout:** desktop first.
-- **Hosting:** local only for now; no deploy.
+- **Hosting:** built locally, deployed to Vercel at the end (final QA stage).
 - **Deadline:** none for now.
 - **Architecture:** one function calls both APIs, and rate limiting lives in that same function.
 - **BattleDex contents:** individual fighters (label and image), not whole fights.
