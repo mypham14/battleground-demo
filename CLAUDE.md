@@ -49,8 +49,8 @@ battleground-demo/
    - Image failure → checks `error.code === 'moderation_blocked'` to distinguish `422 { error: 'moderation_blocked' }` from generic `502 { error: 'image_failed' }`.
    - Success → `200 { verdict: { winner: 'A'|'B', explanation }, imageA, imageB }` (images are `data:image/png;base64,...` strings).
 4. Client renders the VS reveal animation once the response lands, highlights the winning portrait (`winner` is `"A"` or `"B"`, mapped back to the correct side — deliberately not the fighter's text label, so identical/mirror matchups like "lion" vs "lion" aren't ambiguous).
-5. "Save to BattleDex" under each portrait stores `{ label, imageDataUrl }` into a `battledex` localStorage array via `storage.js`, capped at ~20 entries (oldest evicted first). Images are downscaled to 400x400 via canvas before storing — the full 1024x1024 base64 PNGs were tripping the localStorage quota after only 2-3 saves.
-6. `battledex.html` reads/renders that array in a grid. Personal to one browser, by design.
+5. "Save to BattleDex" under each portrait stores `{ label, imageDataUrl }` into a `battledex` localStorage array via `storage.js`, capped at 100 entries (oldest evicted first). Images are downscaled to 256x256 WebP (JPEG fallback) via canvas before storing — the full 1024x1024 base64 PNGs were tripping the localStorage quota after only 2-3 saves.
+6. `battledex.html` reads/renders that array as a grid of non-clickable trading-style cards (image on top, name below, a small remove button), with "Back to recent fight" (only when a recent fight exists) and "New fight" buttons at the top. Personal to one browser, by design.
 
 ## APIs used
 
@@ -75,7 +75,7 @@ battleground-demo/
 - **One combined `/api/fight` endpoint**, not separate per-API endpoints — simpler client, one rate-limit bucket, easier to cap true cost per visitor.
 - **Rate limiting is in-memory and resets on cold start.** Known limitation, acceptable for a demo (see `ponytail:` comment in `api/fight.js`).
 - **Retry = re-run the whole fight from scratch.** No partial-failure state tracking (no separate "just retry the image that failed" logic).
-- **BattleDex has no outcome tracking** — just image + fighter label, capped collection with oldest-eviction, images downscaled to 400x400 before storage to stay well under localStorage quota. `saveToBattledex` also self-heals on `QuotaExceededError` by evicting further even below the 20-cap, in case a browser's real quota is unusually tight.
+- **BattleDex has no outcome tracking** — just image + fighter label, capped collection with oldest-eviction, images downscaled to 256x256 WebP/JPEG before storage to stay well under localStorage quota. `saveToBattledex` also self-heals on `QuotaExceededError` by evicting further even below the 100-cap, in case a browser's real quota is unusually tight.
 - **Always check context7 before writing/using any library API in this project** (Anthropic SDK, OpenAI SDK, Vercel Functions conventions, etc.) — don't rely on training-data memory of these APIs, they move fast and this project intentionally tracks current model/param names (e.g. `gpt-image-2`, `messages.parse`).
 
 ## Environment variables

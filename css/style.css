@@ -662,13 +662,57 @@ input {
   padding: 1rem clamp(1.25rem, 6vw, 5rem) 4rem;
 }
 
+.dex__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-bottom: 2rem;
+}
+
 .dex__title {
-  margin: 0 0 2rem;
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   letter-spacing: -0.03em;
   color: var(--text);
+}
+
+.dex__count {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.dex__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.dex__button {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--accent-text);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.65rem 1.4rem;
+  transition: opacity 0.15s ease;
+}
+
+.dex__button--ghost {
+  color: var(--text);
+  background: transparent;
+  border-color: var(--border-strong);
+}
+
+.dex__button:hover,
+.dex__button:focus-visible {
+  opacity: 0.85;
 }
 
 .dex__empty {
@@ -690,41 +734,92 @@ input {
 
 .dex__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 1.5rem;
 }
 
+/* Mini trading card: framed, image on top, name plate below. Not interactive. */
 .dex-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 0.6rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.6rem 0.85rem;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  padding: 0.55rem 0.55rem 0.7rem;
+  background: linear-gradient(160deg, #1d1d24, #101014 60%, #17171d);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.03), var(--shadow);
+  cursor: default;
+  user-select: none;
+  overflow: hidden;
 }
 
-.dex-card:hover {
-  border-color: var(--border-strong);
-  transform: translateY(-2px);
+.dex-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.06) 50%, transparent 65%);
 }
 
 .dex-card__image {
+  display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
   background: var(--bg);
+  image-rendering: pixelated;
 }
 
 .dex-card__label {
-  font-weight: 600;
+  display: block;
+  padding: 0.35rem 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: 0.95rem;
-  color: var(--text);
+  letter-spacing: -0.01em;
   text-align: center;
   text-transform: capitalize;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.dex-card__remove {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 1;
+  width: 1.75rem;
+  height: 1.75rem;
+  line-height: 1;
+  font-size: 1.15rem;
+  color: var(--text);
+  background: rgba(8, 8, 10, 0.7);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.dex-card:hover .dex-card__remove,
+.dex-card__remove:focus-visible {
+  opacity: 1;
+}
+
+.dex-card__remove:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+@media (hover: none) {
+  .dex-card__remove {
+    opacity: 1;
+  }
 }
 
 /* ---------- Responsive ---------- */

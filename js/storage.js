@@ -1,6 +1,6 @@
 const BATTLEDEX_STORAGE_KEY = 'battledex';
-const BATTLEDEX_MAX_ENTRIES = 20;
-const BATTLEDEX_IMAGE_MAX_DIM = 400;
+const BATTLEDEX_MAX_ENTRIES = 100;
+const BATTLEDEX_IMAGE_MAX_DIM = 256;
 
 function resizeImageDataUrl(dataUrl, maxDim) {
   return new Promise((resolve, reject) => {
@@ -10,7 +10,9 @@ function resizeImageDataUrl(dataUrl, maxDim) {
       canvas.width = maxDim;
       canvas.height = maxDim;
       canvas.getContext('2d').drawImage(img, 0, 0, maxDim, maxDim);
-      resolve(canvas.toDataURL('image/png'));
+      // WebP where the browser can encode it, JPEG otherwise (never the large PNG).
+      const webp = canvas.toDataURL('image/webp', 0.85);
+      resolve(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', 0.85));
     };
     img.onerror = reject;
     img.src = dataUrl;
@@ -51,6 +53,12 @@ async function saveToBattledex({ label, imageDataUrl }) {
     }
   }
   throw new Error('Image too large to save.');
+}
+
+function deleteFromBattledex(id) {
+  const dex = getBattledex().filter((entry) => entry.id !== id);
+  localStorage.setItem(BATTLEDEX_STORAGE_KEY, JSON.stringify(dex));
+  return dex;
 }
 
 const LAST_FIGHT_STORAGE_KEY = 'battleground_lastFight';
