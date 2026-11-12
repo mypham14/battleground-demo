@@ -2,7 +2,9 @@
 
 Source: `project-brief.md`. Work one stage at a time. Each stage ends in something you can run and check before moving on. Everything is built and tested locally; there is no deploy step.
 
-**Architecture:** one serverless function, `api/fight.js`. It calls Claude (verdict) and OpenAI (two images) together and returns the whole result. Rate limiting lives in this same function.
+**Architecture:** one serverless function, `api/fight.js`, served at `/api/fight`. It rate-limits, validates input, then calls Claude (verdict) and OpenAI (two images) in parallel and returns the whole result. Two helper modules sit beside it and are not handlers: `api/judge-prompt.js` (the judge system prompt) and `api/art-style.js` (the shared art style template).
+
+**Stack:** plain HTML, CSS and vanilla JS (modern black theme, `css/style.css`); Anthropic `claude-sonnet-5` for the verdict; OpenAI `gpt-image-2` for the art; `localStorage` for BattleDex. Run locally with `node script.js` (port 3000). It serves the static files and `/api/fight`, and loads `.env`. `vercel dev` is optional and needs symlink permission on Windows.
 
 | # | Stage | Result |
 |---|-------|--------|
@@ -24,9 +26,9 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 **Goal:** a local skeleton with secrets handled correctly.
 
-- Create the repo and folder layout: `index.html`, `style.css`, `app.js`, `api/`.
-- Pick a local runner for the function (for example `vercel dev`) and confirm a "hello world" function responds.
-- Put `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` in a local `.env`, and add `.env` to `.gitignore`.
+- Create the repo and folder layout: `index.html`, `battledex.html`, `css/style.css`, `js/`, `api/`.
+- Use `script.js` as the local runner (`node script.js`) and confirm a "hello world" function responds.
+- Put `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` in a local `.env`, and add `.env` to `.gitignore`. There is no `.env.example` in the repo.
 - Set hard monthly spend limits in the Anthropic and OpenAI dashboards.
 
 **Done when:** the page loads locally, the test function responds, and no key exists in the repo.
@@ -49,11 +51,12 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 **Goal:** the single endpoint, with the Claude call only, tested without the UI.
 
-- `api/fight.js` takes two fighters and calls Claude.
+- `api/fight.js` takes two fighters and calls Claude. The judge system prompt lives in `api/judge-prompt.js`.
 - The prompt treats quantity as part of the matchup ("10 cows vs 10 lions").
 - The judge always names exactly one winner. No ties and no refusals, even for identical matchups (for example "lion" vs "lion"); it still picks a side.
-- The explanation is 2-4 sentences at most, in a fun and playful tone that still holds up logically.
-- Claude returns JSON: `winner`, `explanation`, optionally `tagline`. Validate it before returning, including that `winner` is one of the two fighters and `explanation` is 2-4 sentences.
+- The explanation is 2-4 sentences at most, in a fun and playful tone that still holds up logically. The prompt enforces this.
+- Claude returns JSON `{ winner: "A" | "B", explanation }`, enforced with a zod schema and native structured outputs (`messages.parse` with `zodOutputFormat`). `winner` is `"A"` or `"B"`, not the fighter's text, so identical matchups stay unambiguous.
+- Rate limiting (5 requests/min per IP) and input validation (non-empty, 80 characters or fewer) run before the Claude call.
 - Test with `curl` on a few matchups, including groups and an identical matchup.
 
 **Done when:** the endpoint returns valid JSON for 5 varied matchups, each with one winner and a playful 2-4 sentence explanation, and an identical matchup still returns a winner.
@@ -66,6 +69,7 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 - The verdict's output format is defined with a zod schema, used for Claude's structured output. The UI can rely on the response matching that shape.
 - Switch to the loading view while the call runs, then to the result view with the winner and explanation.
 - Switch to the error view with a simple message if the call fails.
+- The result card works without images: with no images in the response it shows the fighter labels, the winner highlight and the explanation, and hides the image blocks and the save buttons.
 
 **Done when:** you can type two fighters and read a real verdict.
 
@@ -73,14 +77,16 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 **Goal:** add the OpenAI calls to the same function.
 
-- In `api/fight.js`, run the Claude call and both image calls in parallel (`Promise.all`).
-- Every image follows one shared art style template, with the fighter placed into it. The template:
-  - Bold flat-color illustration, thick black outline, dynamic action pose, dramatic lighting, video game character art style.
-  - Centered, filling most of the frame, isolated on a plain solid light grey background with no scenery.
-  - Absolutely no text, words, letters, numbers, logos, watermarks, UI elements, borders, or frames of any kind. Illustration only, nothing else on the canvas.
-- A group prompt depicts the whole group in one image ("10 lions").
-- `moderation_blocked` is its own error case, separate from a generic image failure. When OpenAI refuses a prompt, the function returns `moderation_blocked` (HTTP 422) and names which fighter was refused. Any other image error returns `image_failed` (HTTP 502).
-- Return one response: verdict JSON plus two images.
+- In `api/fight.js`, run the Claude call and both image calls in parallel with `Promise.allSettled`, so each failure can be told apart.
+- Image call: OpenAI `gpt-image-2`, `1024x1024`, `quality: 'low'`, returned as `data:image/png;base64,...`.
+- Every image follows one shared art style template (`api/art-style.js`, `{FIGHTER}` placeholder), with the fighter placed into it. The template:
+  - 16-bit pixel art illustration, retro video game sprite style, bold outlined pixels, vibrant limited color palette, dynamic action pose.
+  - Depicted as one cohesive image, centered, filling most of the frame, isolated on a plain solid color background with no scenery.
+  - No text, words, letters, numbers, logos, watermarks, UI elements, borders or frames.
+- A group prompt depicts the whole group in one image ("10 lions"). The quantity is passed straight through, not parsed.
+- `moderation_blocked` is its own error case, separate from a generic image failure. When OpenAI refuses a prompt (`error.code === 'moderation_blocked'`), the function returns `422 { error: 'moderation_blocked', fighters: ['A' | 'B'], message }`, and the message names the refused fighter or fighters. Any other image error returns `image_failed` (HTTP 502).
+- A verdict failure returns `502 verdict_failed`.
+- Return one response: `{ verdict, imageA, imageB }`.
 
 **Done when:** one request returns a verdict and two images in the shared style for a single-creature matchup and a group matchup, a refused fighter returns `moderation_blocked`, and a different image error returns `image_failed`.
 
@@ -89,7 +95,7 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 **Goal:** the full fight with art.
 
 - Keep the single loading view while the function runs.
-- Show the two images on the winner card in the result view.
+- Show the two images on the winner card in the result view, with the winning portrait highlighted and the explanation beneath.
 - On `moderation_blocked`, ask the user for a different fighter. A generic `image_failed` shows a retry message instead.
 
 **Done when:** one fight shows a verdict and two images, and a refused fighter prompts for a new one.
@@ -119,6 +125,7 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 **Goal:** lock down what Claude will do.
 
+- A baseline guard is already in `api/judge-prompt.js`. This stage hardens it:
 - Write the system prompt so Claude only judges fights between the two fighters and does nothing else.
 - Treat fighter text as untrusted data: put it in clearly delimited fields, and tell Claude never to follow instructions found inside it.
 - Require the fixed JSON output shape; reject anything that doesn't validate.
@@ -131,7 +138,7 @@ Source: `project-brief.md`. Work one stage at a time. Each stage ends in somethi
 
 **Goal:** protect the endpoint.
 
-- Limit to 5 requests/min per IP, inside `api/fight.js`, before any API call is made.
+- Limit to 5 requests/min per IP, inside `api/fight.js`, before any API call is made. A first version is already in place from the earlier stages; this stage tests and finishes it.
 - One call to the function is one fight, so one request means one fight.
 - Return HTTP 429 and show a friendly "slow down" message in the UI.
 - Locally an in-memory counter is enough. It won't be shared across serverless instances, so it would need a shared store if the app is ever deployed.

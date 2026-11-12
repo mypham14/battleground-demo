@@ -1,4 +1,4 @@
-const ART_STYLE_TEMPLATE = `{FIGHTER}. Bold flat-color illustration, thick black outline, dynamic action pose, dramatic lighting, video game character art style. Keep it centered, filling most of the frame, isolated on a plain solid light grey background with no scenery. Absolutely no text, words, letters, numbers, logos, watermarks, UI elements, borders, or frames of any kind. Illustration only, nothing else on the canvas.`;
+const ART_STYLE_TEMPLATE = `{FIGHTER}. 16-bit pixel art illustration, retro video game sprite style, bold outlined pixels, vibrant limited color palette, dynamic action pose. Depicted as one cohesive image, centered, filling most of the frame, isolated on a plain solid color background with no scenery. No text, words, letters, numbers, logos, watermarks, UI elements, borders or frames.`;
 
 function artPrompt(fighter) {
   return ART_STYLE_TEMPLATE.replace('{FIGHTER}', () => fighter);
