@@ -8,35 +8,47 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&family=Rubik:wght@400;500;700;800&display=swap"
     rel="stylesheet"
   />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div class="arena arena--dex">
-    <div class="arena__side arena__side--a" aria-hidden="true"></div>
-    <div class="arena__side arena__side--b" aria-hidden="true"></div>
-
     <header class="hud">
-      <a class="hud__logo" href="index.html">Battle<span class="hud__logo-sword">&#9876;&#65039;</span>ground</a>
+      <a class="hud__logo" href="index.html"><span class="hud__logo-a outline-txt">BATTLE</span><span class="hud__logo-b outline-txt">GROUND</span></a>
+      <nav class="hud__nav" aria-label="Main">
+        <a class="nav-link" href="index.html">ARENA</a>
+        <a class="nav-link" href="battledex.html" aria-current="page">BATTLEDEX <span id="dexBadge" class="nav-link__count">0</span></a>
+      </nav>
     </header>
 
     <main class="dex">
       <div class="dex__head">
-        <div>
-          <h1 class="dex__title">My BattleDex</h1>
-          <p id="dexCount" class="dex__count"></p>
+        <div class="dex__intro">
+          <p class="dex__eyebrow">YOUR FIGHTER COLLECTION</p>
+          <h1 class="dex__title outline-txt">BATTLEDEX</h1>
         </div>
-        <div class="dex__actions">
-          <a id="lastFightButton" class="dex__button dex__button--ghost" href="index.html?recap=1" hidden>Back to recent fight</a>
-          <a class="dex__button" href="index.html">New fight</a>
+        <div class="dex__slots">
+          <div class="dex__slots-head">
+            <span>SLOTS</span>
+            <span id="dexCount" class="dex__count">0 / 100</span>
+          </div>
+          <div id="dexMeter" class="dex__meter" role="meter" aria-label="BattleDex slots used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+          <p class="dex__note">Saved in this browser only. When full, the oldest fighter retires.</p>
         </div>
       </div>
 
+      <div class="dex__actions">
+        <a id="lastFightButton" class="btn btn--panel dex__button" href="index.html?recap=1" hidden>BACK TO RECENT FIGHT</a>
+        <a class="btn dex__button" href="index.html">NEW FIGHT</a>
+      </div>
+
       <div id="dexEmpty" class="dex__empty" hidden>
-        <p>No fighters saved yet. Win or lose, save your favorites after a fight.</p>
-        <a class="fight-again-button" href="index.html">Start a Fight</a>
+        <span class="dex__empty-mark" aria-hidden="true">?</span>
+        <h2 class="dex__empty-title">NO FIGHTERS CAUGHT YET</h2>
+        <p>Win or lose, any fighter can join. Hit “Add to BattleDex” under a portrait after a fight.</p>
+        <a class="btn" href="index.html">START A FIGHT</a>
       </div>
 
       <div id="dexGrid" class="dex__grid"></div>

@@ -39,6 +39,8 @@ const formView = document.getElementById('formView');
 
 const loadingView = document.getElementById('loadingView');
 const loadingMessage = document.getElementById('loadingMessage');
+const loadingNameA = document.getElementById('loadingNameA');
+const loadingNameB = document.getElementById('loadingNameB');
 
 const resultView = document.getElementById('resultView');
 const portraitA = document.getElementById('portraitA');
@@ -48,6 +50,15 @@ const portraitImageB = document.getElementById('portraitImageB');
 const portraitLabelA = document.getElementById('portraitLabelA');
 const portraitLabelB = document.getElementById('portraitLabelB');
 const verdictText = document.getElementById('verdictText');
+const verdictHeadline = document.getElementById('verdictHeadline');
+const hpNameA = document.getElementById('hpNameA');
+const hpNameB = document.getElementById('hpNameB');
+const hpFillA = document.getElementById('hpFillA');
+const hpFillB = document.getElementById('hpFillB');
+const rematchButton = document.getElementById('rematchButton');
+const dexBadge = document.getElementById('dexBadge');
+const counterA = document.getElementById('countA');
+const counterB = document.getElementById('countB');
 const fightAgainButton = document.getElementById('fightAgainButton');
 
 const errorView = document.getElementById('errorView');
@@ -96,11 +107,13 @@ function startLoading() {
   showView('loading');
   const order = shuffled(LOADING_MESSAGES);
   let index = 0;
+  loadingNameA.textContent = lastFighters.fighterA;
+  loadingNameB.textContent = lastFighters.fighterB;
   loadingMessage.textContent = order[0];
   loadingIntervalId = setInterval(() => {
     index = (index + 1) % order.length;
     loadingMessage.textContent = order[index];
-  }, 2200);
+  }, 2600);
 }
 
 function stopLoading() {
@@ -132,9 +145,20 @@ function showResult(data, { persist = true } = {}) {
   portraitLabelA.textContent = lastFighters.fighterA;
   portraitLabelB.textContent = lastFighters.fighterB;
 
-  portraitA.classList.toggle('is-winner', data.verdict.winner === 'A');
-  portraitB.classList.toggle('is-winner', data.verdict.winner === 'B');
+  // Everything below is driven by verdict.winner ('A' | 'B'), never by comparing labels.
+  const winner = data.verdict.winner;
+  const aWins = winner === 'A';
+  portraitA.classList.toggle('win', aWins);
+  portraitA.classList.toggle('lose', !aWins);
+  portraitB.classList.toggle('win', !aWins);
+  portraitB.classList.toggle('lose', aWins);
 
+  hpNameA.textContent = lastFighters.fighterA;
+  hpNameB.textContent = lastFighters.fighterB;
+  hpFillA.classList.toggle('hp__fill--ko', !aWins);
+  hpFillB.classList.toggle('hp__fill--ko', aWins);
+
+  verdictHeadline.textContent = (aWins ? lastFighters.fighterA : lastFighters.fighterB) + ' takes it!';
   verdictText.textContent = data.verdict.explanation;
 
   setSaveButtonState('A', isInBattledex(lastFighters.fighterA), hasImages);
@@ -160,10 +184,10 @@ function showResult(data, { persist = true } = {}) {
 }
 
 function setSaveButtonState(side, saved, visible) {
-  const button = document.querySelector(`.portrait-card__save[data-save="${side}"]`);
+  const button = document.querySelector(`.save-button[data-save="${side}"]`);
   button.hidden = !visible;
   button.disabled = saved;
-  button.textContent = saved ? 'Saved!' : 'Add to BattleDex';
+  button.textContent = saved ? 'Saved ✓' : 'Add to BattleDex';
 }
 
 function validateFighter(value) {
@@ -173,9 +197,22 @@ function validateFighter(value) {
   return true;
 }
 
+function updateCounter(counter, input) {
+  const length = input.value.trim().length;
+  counter.textContent = length + '/' + MAX_FIGHTER_LENGTH;
+  counter.classList.toggle('is-over', length > MAX_FIGHTER_LENGTH);
+}
+
 function updateFightButton() {
+  updateCounter(counterA, fighterAInput);
+  updateCounter(counterB, fighterBInput);
   fightButton.disabled = !(validateFighter(fighterAInput.value) && validateFighter(fighterBInput.value));
 }
+
+function updateDexBadge() {
+  dexBadge.textContent = getBattledex().length;
+}
+updateDexBadge();
 
 fighterAInput.addEventListener('input', updateFightButton);
 fighterBInput.addEventListener('input', updateFightButton);
@@ -238,11 +275,15 @@ retryButton.addEventListener('click', () => {
   runFight(lastFighters.fighterA, lastFighters.fighterB);
 });
 
+rematchButton.addEventListener('click', () => {
+  runFight(lastFighters.fighterA, lastFighters.fighterB);
+});
+
 fightAgainButton.addEventListener('click', () => {
   showForm();
 });
 
-document.querySelectorAll('.portrait-card__save').forEach((button) => {
+document.querySelectorAll('.save-button').forEach((button) => {
   button.addEventListener('click', async () => {
     const side = button.dataset.save;
     const label = side === 'A' ? lastFighters.fighterA : lastFighters.fighterB;
@@ -253,7 +294,8 @@ document.querySelectorAll('.portrait-card__save').forEach((button) => {
 
     try {
       await saveToBattledex({ label, imageDataUrl });
-      button.textContent = 'Saved!';
+      button.textContent = 'Saved ✓';
+      updateDexBadge();
     } catch {
       button.disabled = false;
       button.textContent = 'BattleDex is packed! Clear some space';
