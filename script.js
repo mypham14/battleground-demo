@@ -65,7 +65,7 @@ async function handleApi(request, response) {
     await getFightHandler()(request, vercelStyleResponse);
   } catch (error) {
     console.error(error.message);
-    sendJson(response, 500, { error: 'server_error', message: error.message });
+    sendJson(response, 500, { error: 'server_error', message: "The arena's power just blipped. Give it a moment and try again!" });
   }
 }
 

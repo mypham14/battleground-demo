@@ -1,24 +1,34 @@
-const MAX_FIGHTER_LENGTH = 80;
+const MAX_FIGHTER_LENGTH = 50;
 
 const LOADING_MESSAGES = [
   'Sharpening claws…',
   'Consulting the ancient scrolls…',
   'Warming up the arena…',
-  'Rendering in 4K fury…',
   'Weighing the odds…',
   'Summoning the judges…',
+  'Polishing the championship belt…',
+  'Stretching before the big one…',
+  'Rolling out the red carpet…',
+  'Checking the fighters for hidden snacks…',
+  'Tuning the crowd to maximum roar…',
+  'Inking the matchup posters…',
+  "Sharpening the artist's pencils…",
+  'Rendering in glorious 16-bit…',
+  'Dusting off the trophy…',
   'Powering up…',
-  'Almost there…',
 ];
 
 const ERROR_MESSAGES = {
-  rate_limited: "Whoa, slow down champ — catch your breath and try again in a bit.",
-  invalid_input: 'Give both fighters a name (80 characters or less).',
-  verdict_failed: "The judges couldn't reach a decision. Try again?",
-  moderation_blocked: 'One of those fighters got flagged by the content police. Try a different description.',
-  image_failed: "The artist's pencil broke. Try again?",
-  network_failed: "Couldn't reach the arena. Check your connection and try again.",
-  bad_response: "The arena timed out mid-fight. Try again?",
+  rate_limited: "Whoa there, champ! You're swinging faster than the ref can count. Take a breather and step back in the ring in a minute.",
+  invalid_input: "Hold up! Every corner needs a fighter. Give both a name before the bell rings.",
+  name_too_long: "Easy there, announcer! That name won't fit on the marquee. Keep each fighter under 50 characters.",
+  verdict_failed: "The judges knocked over the scorecards and can't call it. Ring the bell and try again!",
+  image_failed: "Our sketch artist snapped their pencil mid-portrait! Give it another go.",
+  moderation_blocked: "The ref just blew the whistle! That fighter isn't allowed in the ring. Pick someone else.",
+  network_failed: "The arena lights flickered and we lost the connection. Check your signal and run it back!",
+  bad_response: "The crowd went silent, and the arena sent back gibberish mid-fight. Try again!",
+  server_error: "The arena's power just blipped. Give it a moment and try again!",
+  method_not_allowed: "Wrong entrance, challenger! Fights are booked through the main gate only.",
 };
 
 const fighterAInput = document.getElementById('fighterA');
@@ -73,13 +83,23 @@ function showFormError(message) {
   formError.hidden = false;
 }
 
+function shuffled(list) {
+  const copy = list.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 function startLoading() {
   showView('loading');
+  const order = shuffled(LOADING_MESSAGES);
   let index = 0;
-  loadingMessage.textContent = LOADING_MESSAGES[0];
+  loadingMessage.textContent = order[0];
   loadingIntervalId = setInterval(() => {
-    index = (index + 1) % LOADING_MESSAGES.length;
-    loadingMessage.textContent = LOADING_MESSAGES[index];
+    index = (index + 1) % order.length;
+    loadingMessage.textContent = order[index];
   }, 2200);
 }
 
@@ -153,6 +173,14 @@ function validateFighter(value) {
   return true;
 }
 
+function updateFightButton() {
+  fightButton.disabled = !(validateFighter(fighterAInput.value) && validateFighter(fighterBInput.value));
+}
+
+fighterAInput.addEventListener('input', updateFightButton);
+fighterBInput.addEventListener('input', updateFightButton);
+updateFightButton();
+
 async function runFight(fighterA, fighterB) {
   lastFighters = { fighterA, fighterB };
   startLoading();
@@ -193,6 +221,10 @@ fightButton.addEventListener('click', () => {
   const fighterA = fighterAInput.value.trim();
   const fighterB = fighterBInput.value.trim();
 
+  if (fighterA.length > MAX_FIGHTER_LENGTH || fighterB.length > MAX_FIGHTER_LENGTH) {
+    showFormError(ERROR_MESSAGES.name_too_long);
+    return;
+  }
   if (!validateFighter(fighterA) || !validateFighter(fighterB)) {
     showFormError(ERROR_MESSAGES.invalid_input);
     return;
@@ -224,7 +256,7 @@ document.querySelectorAll('.portrait-card__save').forEach((button) => {
       button.textContent = 'Saved!';
     } catch {
       button.disabled = false;
-      button.textContent = 'Add failed (storage full)';
+      button.textContent = 'BattleDex is packed! Clear some space';
     }
   });
 });

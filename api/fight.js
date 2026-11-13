@@ -8,7 +8,7 @@ const { artPrompt } = require('./art-style');
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const MAX_FIGHTER_LENGTH = 80;
+const MAX_FIGHTER_LENGTH = 50;
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
@@ -59,13 +59,13 @@ async function getImage(fighter) {
 
 module.exports = async (request, response) => {
   if (request.method !== 'POST') {
-    response.status(405).json({ error: 'method_not_allowed' });
+    response.status(405).json({ error: 'method_not_allowed', message: "Wrong entrance, challenger! Fights are booked through the main gate only." });
     return;
   }
 
   const ip = (request.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim();
   if (!isAllowed(ip)) {
-    response.status(429).json({ error: 'rate_limited', message: "Whoa, slow down champ — catch your breath and try again in a bit." });
+    response.status(429).json({ error: 'rate_limited', message: "Whoa there, champ! You're swinging faster than the ref can count. Take a breather and step back in the ring in a minute." });
     return;
   }
 
@@ -74,11 +74,13 @@ module.exports = async (request, response) => {
     typeof fighterA !== 'string' ||
     typeof fighterB !== 'string' ||
     !fighterA.trim() ||
-    !fighterB.trim() ||
-    fighterA.length > MAX_FIGHTER_LENGTH ||
-    fighterB.length > MAX_FIGHTER_LENGTH
+    !fighterB.trim()
   ) {
-    response.status(400).json({ error: 'invalid_input', message: 'Give both fighters a name (80 characters or less).' });
+    response.status(400).json({ error: 'invalid_input', message: "Hold up! Every corner needs a fighter. Give both a name before the bell rings." });
+    return;
+  }
+  if (fighterA.trim().length > MAX_FIGHTER_LENGTH || fighterB.trim().length > MAX_FIGHTER_LENGTH) {
+    response.status(400).json({ error: 'name_too_long', message: "Easy there, announcer! That name won't fit on the marquee. Keep each fighter under 50 characters." });
     return;
   }
 
@@ -99,7 +101,7 @@ module.exports = async (request, response) => {
   });
 
   if (verdictResult.status === 'rejected') {
-    response.status(502).json({ error: 'verdict_failed', message: "The judges couldn't reach a decision. Try again?" });
+    response.status(502).json({ error: 'verdict_failed', message: "The judges knocked over the scorecards and can't call it. Ring the bell and try again!" });
     return;
   }
 
@@ -113,13 +115,13 @@ module.exports = async (request, response) => {
     response.status(422).json({
       error: 'moderation_blocked',
       fighters: refused.map(({ side }) => side),
-      message: `${names} got flagged by the content police. Try a different fighter.`,
+      message: `The ref just blew the whistle! ${names} can't step into the ring. Pick a different fighter.`,
     });
     return;
   }
 
   if (imageResults.some(({ result }) => result.status === 'rejected')) {
-    response.status(502).json({ error: 'image_failed', message: "The artist's pencil broke. Try again?" });
+    response.status(502).json({ error: 'image_failed', message: "Our sketch artist snapped their pencil mid-portrait! Give it another go." });
     return;
   }
 

@@ -271,6 +271,14 @@ input {
   transform: scale(0.97);
 }
 
+.fight-button:disabled {
+  cursor: not-allowed;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  box-shadow: 0 0 0 6px rgba(244, 244, 246, 0.03);
+  transform: none;
+}
+
 .fight-button__vs {
   font-size: 0.7rem;
   font-weight: 600;

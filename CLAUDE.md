@@ -40,7 +40,7 @@ battleground-demo/
 ## Logic breakdown
 
 1. User types two fighter strings (free text, quantities like "10 lions" are just part of the string, no separate field), clicks Fight.
-2. Client validates non-empty, ≤80 chars each, shows on-theme loading animation (rotating flavor text + progress indicator), `fetch POST /api/fight` with `{ fighterA, fighterB }`.
+2. Client validates non-empty, ≤50 chars each, shows on-theme loading animation (rotating flavor text + progress indicator), `fetch POST /api/fight` with `{ fighterA, fighterB }`.
 3. `api/fight.js`:
    - Rate limit check first: in-memory `Map` keyed by `x-forwarded-for` IP, 5 requests/60s. Over limit → `429`, no paid API calls made.
    - Validates input server-side too (never trust client).
